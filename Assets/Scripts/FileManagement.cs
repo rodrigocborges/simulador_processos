@@ -20,10 +20,25 @@ public class FileManagement : MonoBehaviour {
             Directory.CreateDirectory(defaultPath + "logs/");
     }
 
-    public string[] ReadFile(string file)
+    public List<string> ReadFile(string file)
     {
-        return null;
-    }
+        List<string> r = new List<string>();
+        if (File.Exists(defaultPath + file))
+        {
+            StreamReader reader = new StreamReader(defaultPath + file);
+            string currentLine = "";
+            while((currentLine = reader.ReadLine()) != null)
+            {
+                r.Add(currentLine);
+            }
+            reader.Dispose();
+        }
+        else
+        {
+            print("File don't exists!");
+        }
+        return r;
+    } //retorna linha a linha do arquivo
 
     public void WriteLog(List<string> info)
     {
@@ -33,7 +48,7 @@ public class FileManagement : MonoBehaviour {
             writer.WriteLine(s);
         }
         writer.Dispose();
-    }
+    } //escreve linha a linha uma informação
 
     public void DeleteAllLogs()
     {
