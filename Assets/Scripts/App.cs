@@ -1,58 +1,157 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using System.IO;
 
-public class App : MonoBehaviour {
+public class Test
+{
+    public int id;
+    public int amount;
+    public string hash;
 
-	[Header("UI Elements")]
-	public Dropdown processesInfo; 
-	public Text processTypeInfo;
-
-    //Algorithm
-    private List<string> algNames = new List<string>();
-    private List<string> algDescs = new List<string>();
-
-    void LoadAlgorithmsInfo()
+    public Test(int id, int amount)
     {
-        string path = Application.dataPath + "/Scripts/algorithm.txt";
-        try
-        {
-            StreamReader r = new StreamReader(path);
-            string all = r.ReadToEnd();
-            string[] content = all.Split(new char[] { ':', ';' }, System.StringSplitOptions.RemoveEmptyEntries); // NAME:DESC;
-            for(int i = 0; i < content.Length-1; i++)
-            {
-                //pares = nome e impares = descrição
-                if (i % 2 == 0)
-                    algNames.Add(content[i]);
-                else
-                    algDescs.Add(content[i]);
-            }
-        }
-        catch(System.Exception ex)
-        {
-            print(ex.Message);
-        }
+        System.Random r = new System.Random();
+        this.id = id;
+        this.amount = amount;
+        this.hash = r.Next(9999).ToString();
+    }
+}
+
+public class App : MonoBehaviour
+{
+    private Vector2 guiAreaSize = new Vector2(600, 500);
+    private string appTitle = "SIMULADOR DE PROCESSOS";
+    private int appView = 0;
+    private string filename = "";
+    private string pAmount = "";
+    private int algSelected = 0;
+    private string[] algs = new string[]{ "FCFS", "SJF", "RR" };
+    private string[] algsDesc = new string[] {
+        "Processos alocados na fila seguindo a ordem de chegada dos mesmos.",
+        "Processos adicionados seguindo a ordem, crescente, de tempo de clock.",
+        "Processos são divididos em intervalos de tempo (quantum)."
+    };
+    private Vector2 scrollView;
+
+    void Start()
+    {
+        filename = System.IO.Directory.GetCurrentDirectory();
+        pAmount = "0";
     }
 
-    public void ShowInfo(){
-        processTypeInfo.text = algDescs[processesInfo.value];
+    void Update()
+    {
+        
     }
 
-    void Start () {
-        LoadAlgorithmsInfo();
-        List<Dropdown.OptionData> od = new List<Dropdown.OptionData>();
-        foreach(string s in algNames)
+    //Função auxiliar para gerar uma textura 2D com tamanho e cor configurável
+    Texture2D GenerateTexture(int width, int height, Color color)
+    {
+        Texture2D t = new Texture2D(width, height);
+        for(int i = 0; i < width; i++)
         {
-            Dropdown.OptionData d = new Dropdown.OptionData(s.Substring(1));
-            od.Add(d);
+            for (int j = 0; j < height; j++)
+                t.SetPixel(i, j, color);
         }
-        processesInfo.AddOptions(od);
+        t.Apply();
+        return t;
     }
-	
-	void Update () {
-		
-	}
+
+    //Função auxiliar para configurar os estilos da parte gráfica do app
+    GUIStyle HUDStyle(int fontSize, FontStyle fontStyle = FontStyle.Normal, Texture2D background = null)
+    {
+        GUIStyle g = new GUIStyle();
+        g.fontSize = fontSize;
+        g.fontStyle = FontStyle.Bold;
+        g.alignment = TextAnchor.MiddleCenter;
+        g.normal.background = background;
+        return g;
+    }
+
+    void HomeView()
+    {
+        GUILayout.Label("Local do arquivo de entrada de processos: ");
+        filename = GUILayout.TextField(filename);
+        if (GUILayout.Button("Importar"))
+            print("Importar...");
+        GUILayout.Space(50);
+        GUILayout.Box("Processos: ");
+        GUILayout.Label("Quantidade de processos para gerar aleatoriamente: ");
+        pAmount = GUILayout.TextField(pAmount);
+        GUILayout.Label("Algoritmo de Escalonamento: ");
+        algSelected = GUILayout.SelectionGrid(algSelected, algs, 3);
+        GUILayout.Label("Descrição: " + algsDesc[algSelected]);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("Gerar Aleatoriamente"))
+            print("Gerar...");
+        if (GUILayout.Button("Checar Processos Gerados"))
+            appView = 1;
+        GUILayout.EndHorizontal();
+        GUILayout.Space(30);
+        GUILayout.MinHeight(40);
+        if (GUILayout.Button("Executar"))
+            print("Executando...");
+    }
+
+    List<Test> tests = new List<Test>() {
+        new Test(1, 1000),
+        new Test(2, 3000),
+        new Test(3, 6000),
+        new Test(4, 22000),
+        new Test(5, 32320),
+        new Test(6, 323230),
+        new Test(7, 30234400),
+        new Test(8, 23),
+        new Test(9, 1212),
+        new Test(10, 2323),
+        new Test(11, 3434),
+        new Test(12, 2323),
+        new Test(13, 1111),
+        new Test(14, 2222),
+        new Test(15, 3333),
+        new Test(16, 444),
+        new Test(17, 1),
+        new Test(18, 0),
+        new Test(19, 444)
+    };
+    void GenerateProcessesView()
+    {
+        if (GUILayout.Button("Voltar"))
+            appView = 0;
+
+        scrollView = GUILayout.BeginScrollView(scrollView, false, true);
+        foreach(Test t in tests)
+        {
+            GUILayout.Box(string.Format("[{0}] {1} / {2}", t.id, t.amount, t.hash));
+        }
+        GUILayout.EndScrollView();
+    }
+
+    void RunningView()
+    {
+
+    }
+
+    void OnGUI()
+    {
+        GUILayout.BeginArea(new Rect(Screen.width/2 - (guiAreaSize.x/2), Screen.height/2 - (guiAreaSize.y/2), guiAreaSize.x, guiAreaSize.y));
+        GUILayout.Box(appTitle, HUDStyle(30, FontStyle.Bold, GenerateTexture(1, 1, Color.white)));
+        switch (appView)
+        {
+            case 0:
+                HomeView();
+                break;
+            case 1:
+                GenerateProcessesView();
+                break;
+            case 2:
+                RunningView();
+                break;
+            default:
+                HomeView();
+                break;
+        }
+        GUILayout.EndArea();
+    }
+
 }
