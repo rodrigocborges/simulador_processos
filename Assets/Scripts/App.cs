@@ -10,6 +10,7 @@ public class Process
     private int quantum;
     private Color color;
     private Texture2D texture;
+    private Vector2 pos = Vector2.zero;
 
     public Process(int id, int incoming, int quantum, int execution, Color color)
     {
@@ -18,6 +19,11 @@ public class Process
         this.quantum = quantum;
         this.execution = execution;
         this.color = color;
+    }
+
+    public void SetPos(Vector2 p)
+    {
+        pos = p;
     }
 
     public int GetID() { return id; }
@@ -37,6 +43,7 @@ public class Process
         t.Apply();
         return t;
     }
+    public Vector2 GetPos() { return pos; }
 
 }
 
