@@ -2,19 +2,42 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Test
+public class Process
 {
-    public int id;
-    public int amount;
-    public string hash;
+    private int id;
+    private int incoming;
+    private int execution;
+    private int quantum;
+    private Color color;
+    private Texture2D texture;
 
-    public Test(int id, int amount)
+    public Process(int id, int incoming, int quantum, int execution, Color color)
     {
-        System.Random r = new System.Random();
         this.id = id;
-        this.amount = amount;
-        this.hash = r.Next(9999).ToString();
+        this.incoming = incoming;
+        this.quantum = quantum;
+        this.execution = execution;
+        this.color = color;
     }
+
+    public int GetID() { return id; }
+    public int GetIncoming() { return incoming; }
+    public int GetExecution() { return execution; }
+    public int GetQuantum() { return quantum; }
+    public Color GetColor() { return color; }
+    public Texture2D GetTexture()
+    {
+        int size = 64;
+        Texture2D t = new Texture2D(size, size);
+        for (int i = 0; i < size; i++)
+        {
+            for (int j = 0; j < size; j++)
+                t.SetPixel(i, j, color);
+        }
+        t.Apply();
+        return t;
+    }
+
 }
 
 public class App : MonoBehaviour
@@ -37,6 +60,9 @@ public class App : MonoBehaviour
     private string textToShow = "";
     private bool messageBox = false;
 
+    private List<Process> listProcess = new List<Process>();
+    private Queue<Process> queueProcess = new Queue<Process>();
+
     void Start()
     {
         filename = System.IO.Directory.GetCurrentDirectory();
@@ -49,27 +75,40 @@ public class App : MonoBehaviour
     }
 
     //Função auxiliar para gerar uma textura 2D com tamanho e cor configurável
-    Texture2D GenerateTexture(int width, int height, Color color)
+    Texture2D GenerateTexture(int size, Color color)
     {
-        Texture2D t = new Texture2D(width, height);
-        for (int i = 0; i < width; i++)
-        {
-            for (int j = 0; j < height; j++)
-                t.SetPixel(i, j, color);
-        }
+        Texture2D t = new Texture2D(size, size);
+        for (int i = 0; i < size; i++)
+            t.SetPixel(i, i, color);
         t.Apply();
         return t;
     }
 
-    //Função auxiliar para configurar os estilos da parte gráfica do app
-    GUIStyle HUDStyle(int fontSize, FontStyle fontStyle = FontStyle.Normal, Texture2D background = null)
+    //Evento para gerar processos aleatórios baseado numa quantidade pré-definida
+    void GenerateRandomProcess(int amount)
     {
-        GUIStyle g = new GUIStyle();
-        g.fontSize = fontSize;
-        g.fontStyle = FontStyle.Bold;
-        g.alignment = TextAnchor.MiddleCenter;
-        g.normal.background = background;
-        return g;
+        if (amount <= 0)
+            StartCoroutine(MessageBox(1.5f, "Digite uma quantia válida para gerar processos!"));
+        else if(amount > maxPAmount)
+            StartCoroutine(MessageBox(1.5f, string.Format("Valor ultrapassou o limite de {0} de processos para gerar!", maxPAmount)));
+        else
+        {
+            listProcess.Clear(); //limpa lista e só depois gera
+            for (int i = 0; i < amount; i++)
+                listProcess.Add(new Process(i * 1000, Random.Range(0, 900), Random.Range(0, 10), Random.Range(0, 1000), Random.ColorHSV()));
+            StartCoroutine(MessageBox(1.5f, "Processos aleatórios gerados com sucesso!"));
+        }
+    }
+
+    //Função auxiliar para exibir uma mensagem/informação em uma caixa
+    IEnumerator MessageBox(float timeToShow, string aux)
+    {
+        messageBox = true;
+        textToShow = aux;
+        yield return new WaitForSeconds(timeToShow);
+        messageBox = false;
+        textToShow = string.Empty;
+        StopAllCoroutines();
     }
 
     void HomeView()
@@ -88,7 +127,7 @@ public class App : MonoBehaviour
         GUILayout.Label("Descrição: " + algsDesc[algSelected]);
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("Gerar Aleatoriamente"))
-            print("Gerar...");
+            GenerateRandomProcess(int.Parse(pAmount));
         if (GUILayout.Button("Checar Processos Gerados"))
             appView = 1;
         GUILayout.EndHorizontal();
@@ -101,55 +140,30 @@ public class App : MonoBehaviour
             GUILayout.Box(textToShow);
     }
 
-    //Função auxiliar para exibir uma mensagem/informação em uma caixa
-    IEnumerator MessageBox(float timeToShow, string aux)
-    {
-        messageBox = true;
-        textToShow = aux;
-        yield return new WaitForSeconds(timeToShow);
-        messageBox = false;
-        textToShow = string.Empty;
-        StopAllCoroutines();
-    }
-
-    List<Test> tests = new List<Test>() {
-        new Test(1, 1000),
-        new Test(2, 3000),
-        new Test(3, 6000),
-        new Test(4, 22000),
-        new Test(5, 32320),
-        new Test(6, 323230),
-        new Test(7, 30234400),
-        new Test(8, 23),
-        new Test(9, 1212),
-        new Test(10, 2323),
-        new Test(11, 3434),
-        new Test(12, 2323),
-        new Test(13, 1111),
-        new Test(14, 2222),
-        new Test(15, 3333),
-        new Test(16, 444),
-        new Test(17, 1),
-        new Test(18, 0),
-        new Test(19, 444)
-    };
     void GenerateProcessesView()
     {
         scrollView = GUILayout.BeginScrollView(scrollView, false, true);
-        foreach (Test t in tests)
+        foreach (Process p in listProcess)
         {
-            GUILayout.Box(string.Format("[{0}] {1} / {2}", t.id, t.amount, t.hash));
+            GUILayout.Box(string.Format("[P{0}] - Entrada [{1}] - T. Execução [{2}] - Quantum [{3}]", p.GetID(), p.GetIncoming(), p.GetExecution(), p.GetQuantum()));
         }
         GUILayout.EndScrollView();
     }
 
+    //TODO: Corrigir
     void RunningView()
     {
         int size = 32;
-        for(int i = 0; i < 10; i++)
+        /*
+            algSelected: 0 - FCFS | 1 - SJF | 2 - RR
+            FCFS: fila
+            SJF: list com sort
+            RR: ??
+        */
+
+        for (int i = 0; i < listProcess.Count; i++)
         {
-            for(int j = 0; j < 10; j++)
-                GUI.Box(new Rect(i * size * 1.2f, j * size * 1.2f + 60, size, size), i.ToString());
+            GUI.Box(new Rect(i * (size + listProcess[i].GetQuantum()) * 1.2f, 60, size + listProcess[i].GetQuantum(), size), listProcess[i].GetTexture());
         }
     }
 
