@@ -1,3 +1,0 @@
- First Came First Served:Processos alocados na fila seguindo a ordem de chegada dos mesmos.;
-Shortest Job First:Processos adicionados seguindo a ordem, crescente, de tempo de clock.;
-Round Robin:Processos são divididos em intervalos de tempo (quantum).;
