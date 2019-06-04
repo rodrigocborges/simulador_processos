@@ -19,19 +19,23 @@ public class Test
 
 public class App : MonoBehaviour
 {
+    [SerializeField] private GUISkin guiSkin;
     private Vector2 guiAreaSize = new Vector2(600, 500);
     private string appTitle = "SIMULADOR DE PROCESSOS";
     private int appView = 0;
     private string filename = "";
     private string pAmount = "";
+    private int maxPAmount = 60;
     private int algSelected = 0;
-    private string[] algs = new string[]{ "FCFS", "SJF", "RR" };
+    private string[] algs = new string[] { "FCFS", "SJF", "RR" };
     private string[] algsDesc = new string[] {
         "Processos alocados na fila seguindo a ordem de chegada dos mesmos.",
         "Processos adicionados seguindo a ordem, crescente, de tempo de clock.",
         "Processos são divididos em intervalos de tempo (quantum)."
     };
     private Vector2 scrollView;
+    private string textToShow = "";
+    private bool messageBox = false;
 
     void Start()
     {
@@ -41,14 +45,14 @@ public class App : MonoBehaviour
 
     void Update()
     {
-        
+
     }
 
     //Função auxiliar para gerar uma textura 2D com tamanho e cor configurável
     Texture2D GenerateTexture(int width, int height, Color color)
     {
         Texture2D t = new Texture2D(width, height);
-        for(int i = 0; i < width; i++)
+        for (int i = 0; i < width; i++)
         {
             for (int j = 0; j < height; j++)
                 t.SetPixel(i, j, color);
@@ -73,11 +77,12 @@ public class App : MonoBehaviour
         GUILayout.Label("Local do arquivo de entrada de processos: ");
         filename = GUILayout.TextField(filename);
         if (GUILayout.Button("Importar"))
-            print("Importar...");
+            StartCoroutine(MessageBox(1.5f, "Importando..."));
         GUILayout.Space(50);
+
         GUILayout.Box("Processos: ");
         GUILayout.Label("Quantidade de processos para gerar aleatoriamente: ");
-        pAmount = GUILayout.TextField(pAmount);
+        pAmount = GUILayout.TextField(pAmount, maxPAmount);
         GUILayout.Label("Algoritmo de Escalonamento: ");
         algSelected = GUILayout.SelectionGrid(algSelected, algs, 3);
         GUILayout.Label("Descrição: " + algsDesc[algSelected]);
@@ -90,7 +95,21 @@ public class App : MonoBehaviour
         GUILayout.Space(30);
         GUILayout.MinHeight(40);
         if (GUILayout.Button("Executar"))
-            print("Executando...");
+            appView = 2;
+
+        if(messageBox)
+            GUILayout.Box(textToShow);
+    }
+
+    //Função auxiliar para exibir uma mensagem/informação em uma caixa
+    IEnumerator MessageBox(float timeToShow, string aux)
+    {
+        messageBox = true;
+        textToShow = aux;
+        yield return new WaitForSeconds(timeToShow);
+        messageBox = false;
+        textToShow = string.Empty;
+        StopAllCoroutines();
     }
 
     List<Test> tests = new List<Test>() {
@@ -116,11 +135,8 @@ public class App : MonoBehaviour
     };
     void GenerateProcessesView()
     {
-        if (GUILayout.Button("Voltar"))
-            appView = 0;
-
         scrollView = GUILayout.BeginScrollView(scrollView, false, true);
-        foreach(Test t in tests)
+        foreach (Test t in tests)
         {
             GUILayout.Box(string.Format("[{0}] {1} / {2}", t.id, t.amount, t.hash));
         }
@@ -129,13 +145,26 @@ public class App : MonoBehaviour
 
     void RunningView()
     {
-
+        int size = 32;
+        for(int i = 0; i < 10; i++)
+        {
+            for(int j = 0; j < 10; j++)
+                GUI.Box(new Rect(i * size * 1.2f, j * size * 1.2f + 60, size, size), i.ToString());
+        }
     }
 
     void OnGUI()
     {
-        GUILayout.BeginArea(new Rect(Screen.width/2 - (guiAreaSize.x/2), Screen.height/2 - (guiAreaSize.y/2), guiAreaSize.x, guiAreaSize.y));
-        GUILayout.Box(appTitle, HUDStyle(30, FontStyle.Bold, GenerateTexture(1, 1, Color.white)));
+        GUI.skin = guiSkin;
+        GUILayout.BeginArea(new Rect(Screen.width / 2 - (guiAreaSize.x / 2), Screen.height / 2 - (guiAreaSize.y / 2), guiAreaSize.x, guiAreaSize.y));
+        GUILayout.Box(appTitle);
+
+        if(appView != 0)
+        {
+            if (GUILayout.Button("Voltar"))
+                appView = 0;
+        }
+
         switch (appView)
         {
             case 0:
