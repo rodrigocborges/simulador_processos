@@ -161,10 +161,20 @@ public class App : MonoBehaviour
             RR: ??
         */
 
+        GUILayout.BeginHorizontal();
         for (int i = 0; i < listProcess.Count; i++)
         {
-            GUI.Box(new Rect(i * (size + listProcess[i].GetQuantum()) * 1.2f, 60, size + listProcess[i].GetQuantum(), size), listProcess[i].GetTexture());
+            GUILayout.Box(listProcess[i].GetID().ToString(), GUILayout.Width(size + listProcess[i].GetQuantum()));
         }
+        GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("Retroceder"))
+            print("Retroceder");
+
+        if (GUILayout.Button("Avançar"))
+            print("Avançar");
+        GUILayout.EndHorizontal();
     }
 
     void OnGUI()
