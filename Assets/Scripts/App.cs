@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+// Tempo de chegada / Tempo de execução
 public class Process
 {
     private int id;
@@ -12,7 +12,7 @@ public class Process
     private Texture2D texture;
     private Vector2 pos = Vector2.zero;
 
-    public Process(int id, int incoming, int quantum, int execution, Color color)
+    public Process(int id, int incoming, int execution, Color color, int quantum = 2)
     {
         this.id = id;
         this.incoming = incoming;
@@ -64,6 +64,7 @@ public class App : MonoBehaviour
         "Processos são divididos em intervalos de tempo (quantum)."
     };
     private Vector2 scrollView;
+    private Vector2 hScrollView;
     private string textToShow = "";
     private bool messageBox = false;
 
@@ -102,7 +103,7 @@ public class App : MonoBehaviour
         {
             listProcess.Clear(); //limpa lista e só depois gera
             for (int i = 0; i < amount; i++)
-                listProcess.Add(new Process(i * 1000, Random.Range(0, 900), Random.Range(0, 10), Random.Range(0, 1000), Random.ColorHSV()));
+                listProcess.Add(new Process(i + 1, Random.Range(0, 900), Random.Range(1, 10), Random.ColorHSV()));
             StartCoroutine(MessageBox(1.5f, "Processos aleatórios gerados com sucesso!"));
         }
     }
@@ -123,7 +124,12 @@ public class App : MonoBehaviour
         GUILayout.Label("Local do arquivo de entrada de processos: ");
         filename = GUILayout.TextField(filename);
         if (GUILayout.Button("Importar"))
+        {
+            FileManagement fs = new FileManagement();
+            List<string> fileIn = fs.ReadFile(filename);
+            ConvertFileInToProcess(fileIn);
             StartCoroutine(MessageBox(1.5f, "Importando..."));
+        }
         GUILayout.Space(50);
 
         GUILayout.Box("Processos: ");
@@ -147,6 +153,20 @@ public class App : MonoBehaviour
             GUILayout.Box(textToShow);
     }
 
+    //Função auxiliar para pegar linha a linha do arquivo e colocar os devidos parametros de cada processo na lista
+    void ConvertFileInToProcess(List<string> fileIn)
+    {
+        for(int i = 0; i < fileIn.Count; i++)
+        {
+            string[] aux = fileIn[i].Split(' ');
+            int id = int.Parse(aux[0]);
+            int incoming = int.Parse(aux[1]);
+            int execution = int.Parse(aux[2]);
+            listProcess.Add(new Process(id, incoming, execution, Color.red));
+        }
+        listProcess.Sort();
+    }
+
     void GenerateProcessesView()
     {
         scrollView = GUILayout.BeginScrollView(scrollView, false, true);
@@ -168,12 +188,14 @@ public class App : MonoBehaviour
             RR: ??
         */
 
+        hScrollView = GUILayout.BeginScrollView(hScrollView, true, false, GUILayout.Height(60));
         GUILayout.BeginHorizontal();
         for (int i = 0; i < listProcess.Count; i++)
         {
-            GUILayout.Box(listProcess[i].GetID().ToString(), GUILayout.Width(size + listProcess[i].GetQuantum()));
+            GUILayout.Box("P" + listProcess[i].GetID() + " (" + listProcess[i].GetQuantum() + ")", GUILayout.Width(size + (listProcess[i].GetQuantum() * 10)));
         }
         GUILayout.EndHorizontal();
+        GUILayout.EndScrollView();
 
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("Retroceder"))
