@@ -164,7 +164,10 @@ public class App : MonoBehaviour
             int execution = int.Parse(aux[2]);
             listProcess.Add(new Process(id, incoming, execution, Color.red));
         }
-        listProcess.Sort();
+        listProcess.Sort((a, b) =>
+        {
+            return a.GetIncoming().CompareTo(b.GetIncoming());
+        });
     }
 
     void GenerateProcessesView()
