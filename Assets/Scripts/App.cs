@@ -9,7 +9,6 @@ public class Process
     private int execution;
     private int quantum;
     private Color color;
-    private Texture2D texture;
     private Vector2 pos = Vector2.zero;
 
     public Process(int id, int incoming, int execution, Color color, int quantum = 2)
@@ -31,18 +30,6 @@ public class Process
     public int GetExecution() { return execution; }
     public int GetQuantum() { return quantum; }
     public Color GetColor() { return color; }
-    public Texture2D GetTexture()
-    {
-        int size = 64;
-        Texture2D t = new Texture2D(size, size);
-        for (int i = 0; i < size; i++)
-        {
-            for (int j = 0; j < size; j++)
-                t.SetPixel(i, j, color);
-        }
-        t.Apply();
-        return t;
-    }
     public Vector2 GetPos() { return pos; }
 
 }
@@ -67,19 +54,34 @@ public class App : MonoBehaviour
     private Vector2 hScrollView;
     private string textToShow = "";
     private bool messageBox = false;
+    private float timeSpeed = 12.5f;
+    private float currentClockTime = 0;
+    private float clockTime = 0;
 
     private List<Process> listProcess = new List<Process>();
     private Queue<Process> queueProcess = new Queue<Process>();
 
     void Start()
     {
-        filename = System.IO.Directory.GetCurrentDirectory();
+        filename = System.IO.Directory.GetCurrentDirectory() + "/entrada.txt";
         pAmount = "0";
     }
 
     void Update()
     {
-
+        if(appView == 2) //começa a contar o time somente quando estiver na view Running
+        {
+            currentClockTime += Time.deltaTime * timeSpeed;
+            if (currentClockTime >= clockTime)
+            {
+                ++clockTime;
+                currentClockTime = 0;
+            }
+        }
+        else
+        {
+            clockTime = 0;
+        }
     }
 
     //Função auxiliar para gerar uma textura 2D com tamanho e cor configurável
@@ -167,7 +169,7 @@ public class App : MonoBehaviour
         listProcess.Sort((a, b) =>
         {
             return a.GetIncoming().CompareTo(b.GetIncoming());
-        });
+        }); //ordenação por tempo de chegada (menor para o maior)
     }
 
     void GenerateProcessesView()
@@ -191,11 +193,28 @@ public class App : MonoBehaviour
             RR: ??
         */
 
+        GUILayout.Box("Tempo de clock: " + clockTime + " | Aceleração do tempo (%): " + timeSpeed);
+
         hScrollView = GUILayout.BeginScrollView(hScrollView, true, false, GUILayout.Height(60));
         GUILayout.BeginHorizontal();
+
+        if(algSelected == 0) //FCFS
+        {
+
+        }
+        else if(algSelected == 1) //SJF
+        {
+
+        }
+        else //RR
+        {
+
+        }
+
         for (int i = 0; i < listProcess.Count; i++)
         {
-            GUILayout.Box("P" + listProcess[i].GetID() + " (" + listProcess[i].GetQuantum() + ")", GUILayout.Width(size + (listProcess[i].GetQuantum() * 10)));
+            if (listProcess[i].GetIncoming() >= clockTime && listProcess[i].GetExecution() < clockTime)
+                GUILayout.Box("P" + listProcess[i].GetID() + " (" + listProcess[i].GetQuantum() + ")", GUILayout.Width(size + (listProcess[i].GetQuantum() * 10)));
         }
         GUILayout.EndHorizontal();
         GUILayout.EndScrollView();
