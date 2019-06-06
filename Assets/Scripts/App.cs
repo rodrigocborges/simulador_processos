@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-// Tempo de chegada / Tempo de execução
+
 public class Process
 {
     private int id;
@@ -38,7 +38,7 @@ public class App : MonoBehaviour
 {
     [SerializeField] private GUISkin guiSkin;
     private Vector2 guiAreaSize = new Vector2(600, 500);
-    private string appTitle = "SIMULADOR DE PROCESSOS";
+    private string appTitle = "SIMPOP - SIMULADOR DE PROCESSOS";
     private int appView = 0;
     private string filename = "";
     private string pAmount = "";
@@ -54,7 +54,7 @@ public class App : MonoBehaviour
     private Vector2 hScrollView;
     private string textToShow = "";
     private bool messageBox = false;
-    private float timeSpeed = 12.5f;
+    private float timeSpeed = 50f;
     private float currentClockTime = 0;
     private float clockTime = 0;
 
@@ -186,14 +186,13 @@ public class App : MonoBehaviour
     void RunningView()
     {
         int size = 32;
+        int pExecutions = 0;
         /*
             algSelected: 0 - FCFS | 1 - SJF | 2 - RR
             FCFS: fila
             SJF: list com sort
             RR: ??
         */
-
-        GUILayout.Box("Tempo de clock: " + clockTime + " | Aceleração do tempo (%): " + timeSpeed);
 
         hScrollView = GUILayout.BeginScrollView(hScrollView, true, false, GUILayout.Height(60));
         GUILayout.BeginHorizontal();
@@ -214,17 +213,37 @@ public class App : MonoBehaviour
         for (int i = 0; i < listProcess.Count; i++)
         {
             if (listProcess[i].GetIncoming() >= clockTime && listProcess[i].GetExecution() < clockTime)
+            {
+                ++pExecutions;
                 GUILayout.Box("P" + listProcess[i].GetID() + " (" + listProcess[i].GetQuantum() + ")", GUILayout.Width(size + (listProcess[i].GetQuantum() * 10)));
+            }
         }
         GUILayout.EndHorizontal();
         GUILayout.EndScrollView();
 
+        GUILayout.Box("Tempo de clock: " + clockTime + " | Aceleração do tempo (%): " + timeSpeed + " | Processos: " + pExecutions + " de " + listProcess.Count);
+            
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("Retroceder"))
-            print("Retroceder");
+        {
+            if(clockTime >= 0)
+                clockTime -= 5;
+        }
+
+        if (GUILayout.Button("Pausar"))
+        {
+            Time.timeScale = 0;
+        }
+
+        if (GUILayout.Button("Acelerar"))
+        {
+            timeSpeed += 5;
+        }
 
         if (GUILayout.Button("Avançar"))
-            print("Avançar");
+        {
+            clockTime += 5;
+        }
         GUILayout.EndHorizontal();
     }
 
@@ -232,7 +251,7 @@ public class App : MonoBehaviour
     {
         GUI.skin = guiSkin;
         GUILayout.BeginArea(new Rect(Screen.width / 2 - (guiAreaSize.x / 2), Screen.height / 2 - (guiAreaSize.y / 2), guiAreaSize.x, guiAreaSize.y));
-        GUILayout.Box(appTitle);
+        GUILayout.Box(appTitle, GUILayout.Height(60)); //TODO: Adicionar LOGO
 
         if(appView != 0)
         {
