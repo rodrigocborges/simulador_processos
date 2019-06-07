@@ -9,7 +9,6 @@ public class Process
     private int execution;
     private int quantum;
     private Color color;
-    private Vector2 pos = Vector2.zero;
 
     public Process(int id, int incoming, int execution, Color color, int quantum = 2)
     {
@@ -20,28 +19,25 @@ public class Process
         this.color = color;
     }
 
-    public void SetPos(Vector2 p)
-    {
-        pos = p;
-    }
-
     public int GetID() { return id; }
     public int GetIncoming() { return incoming; }
     public int GetExecution() { return execution; }
     public int GetQuantum() { return quantum; }
     public Color GetColor() { return color; }
-    public Vector2 GetPos() { return pos; }
 
 }
 
 public class App : MonoBehaviour
 {
     [SerializeField] private GUISkin guiSkin;
-    private Vector2 guiAreaSize = new Vector2(600, 500);
+    [SerializeField] private Texture2D logo;
+    private Vector2 guiAreaSize;
+    private Vector2 scrollView;
+    private Vector2 hScrollView;
     private string appTitle = "SIMPOP - SIMULADOR DE PROCESSOS";
-    private int appView = 0;
     private string filename = "";
     private string pAmount = "";
+    private int appView = 0;
     private int maxPAmount = 60;
     private int algSelected = 0;
     private string[] algs = new string[] { "FCFS", "SJF", "RR" };
@@ -50,37 +46,51 @@ public class App : MonoBehaviour
         "Processos adicionados seguindo a ordem, crescente, de tempo de clock.",
         "Processos são divididos em intervalos de tempo (quantum)."
     };
-    private Vector2 scrollView;
-    private Vector2 hScrollView;
     private string textToShow = "";
+    private string btnPausedText;
     private bool messageBox = false;
-    private float timeSpeed = 50f;
+    private bool paused = false;
+    private float timeSpeed = 10f;
     private float currentClockTime = 0;
-    private float clockTime = 0;
+    private float executionTime = 0;
 
     private List<Process> listProcess = new List<Process>();
     private Queue<Process> queueProcess = new Queue<Process>();
 
     void Start()
     {
+        //Redimensionar objetos baseado no tamanho da tela
+        guiAreaSize = new Vector2(Screen.width - 100, Screen.height);
+        //Caminho de arquivo de entrada padrão
         filename = System.IO.Directory.GetCurrentDirectory() + "/entrada.txt";
-        pAmount = "0";
+        pAmount = "0"; // Quantidade padrão de processos aleatórios para ser gerado
     }
 
     void Update()
     {
-        if(appView == 2) //começa a contar o time somente quando estiver na view Running
+        if(paused)
+        {
+            btnPausedText = "Despausar";
+            Time.timeScale = 0;
+        }
+        else
+        {
+            btnPausedText = "Pausar";
+            Time.timeScale = 1;
+        }
+
+        if (appView == 2) //começa a contar o time somente quando estiver na view Running
         {
             currentClockTime += Time.deltaTime * timeSpeed;
-            if (currentClockTime >= clockTime)
+            if (currentClockTime >= 5)
             {
-                ++clockTime;
+                ++executionTime;
                 currentClockTime = 0;
             }
         }
         else
         {
-            clockTime = 0;
+            executionTime = 0;
         }
     }
 
@@ -98,7 +108,7 @@ public class App : MonoBehaviour
     void GenerateRandomProcess(int amount)
     {
         if (amount <= 0)
-            StartCoroutine(MessageBox(1.5f, "Digite uma quantia válida para gerar processos!"));
+            StartCoroutine(MessageBox(1.5f, "Digite uma quantidade válida para gerar processos!"));
         else if(amount > maxPAmount)
             StartCoroutine(MessageBox(1.5f, string.Format("Valor ultrapassou o limite de {0} de processos para gerar!", maxPAmount)));
         else
@@ -149,10 +159,13 @@ public class App : MonoBehaviour
         GUILayout.Space(30);
         GUILayout.MinHeight(40);
         if (GUILayout.Button("Executar"))
-            appView = 2;
-
-        if(messageBox)
-            GUILayout.Box(textToShow);
+        {
+            //Verifica se tem processos, senão pede para importar ou gerar aleatoriamente
+            if (listProcess.Count == 0)
+                StartCoroutine(MessageBox(1.5f, "Sem processos na lista, importe ou gere!"));
+            else
+                appView = 2;
+        }
     }
 
     //Função auxiliar para pegar linha a linha do arquivo e colocar os devidos parametros de cada processo na lista
@@ -199,50 +212,64 @@ public class App : MonoBehaviour
 
         if(algSelected == 0) //FCFS
         {
-
+            for (int i = 0; i < listProcess.Count; i++)
+            {
+                if (listProcess[i].GetIncoming() >= executionTime && listProcess[i].GetExecution() < executionTime)
+                {
+                    ++pExecutions;
+                    GUILayout.Box("P" + listProcess[i].GetID(), GUILayout.Width(size + (listProcess[i].GetQuantum() * 10)), GUILayout.Height(32));
+                }
+            }
         }
         else if(algSelected == 1) //SJF
         {
-
+            Algorithms.InExecution = listProcess[0];
+            listProcess = Algorithms.SJF(listProcess, executionTime);
+            for (int i = 0; i < listProcess.Count; i++)
+            {
+                if(listProcess[i].GetIncoming() <= executionTime)
+                {
+                    ++pExecutions;
+                    GUILayout.Box("P" + listProcess[i].GetID(), GUILayout.Width(size + (listProcess[i].GetQuantum() * 10)), GUILayout.Height(32));
+                }
+            }
         }
         else //RR
         {
 
         }
 
-        for (int i = 0; i < listProcess.Count; i++)
-        {
-            if (listProcess[i].GetIncoming() >= clockTime && listProcess[i].GetExecution() < clockTime)
-            {
-                ++pExecutions;
-                GUILayout.Box("P" + listProcess[i].GetID() + " (" + listProcess[i].GetQuantum() + ")", GUILayout.Width(size + (listProcess[i].GetQuantum() * 10)));
-            }
-        }
         GUILayout.EndHorizontal();
         GUILayout.EndScrollView();
 
-        GUILayout.Box("Tempo de clock: " + clockTime + " | Aceleração do tempo (%): " + timeSpeed + " | Processos: " + pExecutions + " de " + listProcess.Count);
-            
+        GUILayout.Box("Tempo de execução: " + executionTime + " | Aceleração do tempo (%): " + timeSpeed + " | Processos: " + pExecutions + " de " + listProcess.Count);
+        GUILayout.Box("Estratégia de escalonamento sendo utilizada: " + algs[algSelected]);
+
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("Retroceder"))
         {
-            if(clockTime >= 0)
-                clockTime -= 5;
+            if(executionTime >= 0)
+                --executionTime;
         }
 
-        if (GUILayout.Button("Pausar"))
-        {
-            Time.timeScale = 0;
-        }
+        if (GUILayout.Button(btnPausedText))
+            paused = !paused;
 
         if (GUILayout.Button("Acelerar"))
         {
-            timeSpeed += 5;
+            if(timeSpeed < 100)
+                ++timeSpeed;
+        }
+
+        if (GUILayout.Button("Desacelerar"))
+        {
+            if (timeSpeed > 0)
+                --timeSpeed;
         }
 
         if (GUILayout.Button("Avançar"))
         {
-            clockTime += 5;
+            ++executionTime;
         }
         GUILayout.EndHorizontal();
     }
@@ -251,14 +278,16 @@ public class App : MonoBehaviour
     {
         GUI.skin = guiSkin;
         GUILayout.BeginArea(new Rect(Screen.width / 2 - (guiAreaSize.x / 2), Screen.height / 2 - (guiAreaSize.y / 2), guiAreaSize.x, guiAreaSize.y));
-        GUILayout.Box(appTitle, GUILayout.Height(60)); //TODO: Adicionar LOGO
+        GUILayout.Box(logo, GUILayout.Height(100));
+        GUILayout.Box("Desenvolvido por Rodrigo Borges e Bruno Lobell - AIC 2 (FURG, 2019)");
 
-        if(appView != 0)
+        if (appView != 0)
         {
             if (GUILayout.Button("Voltar"))
                 appView = 0;
         }
 
+        //Máquina de estados para as views
         switch (appView)
         {
             case 0:
@@ -274,6 +303,11 @@ public class App : MonoBehaviour
                 HomeView();
                 break;
         }
+
+        //Se houver uma mensagem, exibe
+        if (messageBox)
+            GUILayout.Box(textToShow);
+
         GUILayout.EndArea();
     }
 
