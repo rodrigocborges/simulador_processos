@@ -37,24 +37,11 @@ public class FileManagement : MonoBehaviour {
 
     public void StartLog(string path)
     {
-        string local = path + "/logs/" + System.DateTime.Now.Day + "_" + System.DateTime.Now.Month + ".log";
-        if (File.Exists(local))
-        {
-            fileToInsert = local;
-        }
-        else
-        {
-            try
-            {
-                StreamWriter writer = new StreamWriter(local);
-                writer.WriteLine("Log iniciado em: " + System.DateTime.Now);
-                writer.Close();
-            }
-            catch (System.IO.IOException ex)
-            {
-                print(ex.Message);
-            }
-        }
+        System.DateTime d = System.DateTime.Now;
+        fileToInsert = path + "/logs/" + string.Format("{0}{1}{2}_{3}{4}{5}.log", d.Day, d.Month, d.Year, d.Hour, d.Minute, d.Second);
+        StreamWriter writer = File.AppendText(fileToInsert);
+        writer.WriteLine("Log iniciado em: " + d);
+        writer.Close();
     }
 
     public void WriteLog(string info)
