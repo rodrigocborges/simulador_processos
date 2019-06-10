@@ -2,31 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Process
-{
-    private int id;
-    private int incoming;
-    private int execution;
-    private int quantum;
-    private Color color;
-
-    public Process(int id, int incoming, int execution, Color color, int quantum = 2)
-    {
-        this.id = id;
-        this.incoming = incoming;
-        this.quantum = quantum;
-        this.execution = execution;
-        this.color = color;
-    }
-
-    public int GetID() { return id; }
-    public int GetIncoming() { return incoming; }
-    public int GetExecution() { return execution; }
-    public int GetQuantum() { return quantum; }
-    public Color GetColor() { return color; }
-
-}
-
 public class App : MonoBehaviour
 {
     [SerializeField] private GUISkin guiSkin;
@@ -55,7 +30,6 @@ public class App : MonoBehaviour
     private float executionTime = 0;
 
     private List<Process> listProcess = new List<Process>();
-    private Queue<Process> queueProcess = new Queue<Process>();
 
     void Start()
     {
@@ -92,16 +66,6 @@ public class App : MonoBehaviour
         {
             executionTime = 0;
         }
-    }
-
-    //Função auxiliar para gerar uma textura 2D com tamanho e cor configurável
-    Texture2D GenerateTexture(int size, Color color)
-    {
-        Texture2D t = new Texture2D(size, size);
-        for (int i = 0; i < size; i++)
-            t.SetPixel(i, i, color);
-        t.Apply();
-        return t;
     }
 
     //Evento para gerar processos aleatórios baseado numa quantidade pré-definida
@@ -177,12 +141,8 @@ public class App : MonoBehaviour
             int id = int.Parse(aux[0]);
             int incoming = int.Parse(aux[1]);
             int execution = int.Parse(aux[2]);
-            listProcess.Add(new Process(id, incoming, execution, Color.red));
+            listProcess.Add(new Process(id, incoming, execution, Random.ColorHSV()));
         }
-        listProcess.Sort((a, b) =>
-        {
-            return a.GetIncoming().CompareTo(b.GetIncoming());
-        }); //ordenação por tempo de chegada (menor para o maior)
     }
 
     void GenerateProcessesView()
@@ -194,55 +154,74 @@ public class App : MonoBehaviour
         }
         GUILayout.EndScrollView();
     }
+    int count = 0;
 
-    //TODO: Corrigir
+    void EditInExecution()
+    {
+        List<Process> aux = new List<Process>();
+        for (int i = count; i < listProcess.Count; i++)
+        {
+            if (listProcess[i].GetIncoming() < executionTime)
+            {
+                aux.Add(listProcess[i]);
+                count++;
+            }
+        }
+        if (aux[0].GetExecutedTime() <= 0 && aux.Count > 1)
+        {
+            print(1);
+            aux.RemoveAt(0);
+        }
+        print(aux[0].GetID());
+        if (aux.Count >= 1)
+            Algorithms.InExecution = aux[0];
+        else
+            Algorithms.InExecution = listProcess[0];
+    }
+
+    void ApplyAlgVisual() {
+        int minimalSize = 32;
+        Algorithms.InExecution.SetExecutedTime(Algorithms.InExecution.GetExecution() + Algorithms.InExecution.GetIncoming() - Mathf.FloorToInt(executionTime));
+        for (int i = 0; i < listProcess.Count; i++)
+        {
+            if (listProcess[i].GetIncoming() < executionTime && listProcess[i].GetExecutedTime() > 0 && listProcess[i].GetExecutedTime() <= listProcess[i].GetExecution())
+            {
+                GUILayout.Box("P" + listProcess[i].GetID(), GUILayout.Width(minimalSize + (listProcess[i].GetExecutedTime() * 10)), GUILayout.Height(32), GUILayout.ExpandHeight(false));
+            }
+        }
+    }
+
     void RunningView()
     {
-        int size = 32;
         int pExecutions = 0;
-        /*
-            algSelected: 0 - FCFS | 1 - SJF | 2 - RR
-            FCFS: fila
-            SJF: list com sort
-            RR: ??
-        */
-
+    
         hScrollView = GUILayout.BeginScrollView(hScrollView, true, false, GUILayout.Height(60));
         GUILayout.BeginHorizontal();
 
         if(algSelected == 0) //FCFS
         {
-            for (int i = 0; i < listProcess.Count; i++)
-            {
-                if (listProcess[i].GetIncoming() >= executionTime && listProcess[i].GetExecution() < executionTime)
-                {
-                    ++pExecutions;
-                    GUILayout.Box("P" + listProcess[i].GetID(), GUILayout.Width(size + (listProcess[i].GetQuantum() * 10)), GUILayout.Height(32));
-                }
-            }
+            //Algorithms.InExecution = listProcess[0];
+            EditInExecution();
+            listProcess = Algorithms.FCFS(listProcess);
+            ApplyAlgVisual();
         }
         else if(algSelected == 1) //SJF
         {
             Algorithms.InExecution = listProcess[0];
-            listProcess = Algorithms.SJF(listProcess, executionTime);
-            for (int i = 0; i < listProcess.Count; i++)
-            {
-                if(listProcess[i].GetIncoming() <= executionTime)
-                {
-                    ++pExecutions;
-                    GUILayout.Box("P" + listProcess[i].GetID(), GUILayout.Width(size + (listProcess[i].GetQuantum() * 10)), GUILayout.Height(32));
-                }
-            }
+            listProcess = Algorithms.SJF(listProcess);
+            ApplyAlgVisual();
         }
         else //RR
         {
-
+            Algorithms.InExecution = listProcess[0];
+            listProcess = Algorithms.RR(listProcess);
+            ApplyAlgVisual();
         }
 
         GUILayout.EndHorizontal();
         GUILayout.EndScrollView();
 
-        GUILayout.Box("Tempo de execução: " + executionTime + " | Aceleração do tempo (%): " + timeSpeed + " | Processos: " + pExecutions + " de " + listProcess.Count);
+        GUILayout.Box("Tempo de execução: " + executionTime + " | Aceleração do tempo (%): " + timeSpeed);
         GUILayout.Box("Estratégia de escalonamento sendo utilizada: " + algs[algSelected]);
 
         GUILayout.BeginHorizontal();

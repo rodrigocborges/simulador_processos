@@ -1,25 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class Algorithms
 {
     public static Process InExecution = null;
 
-    public static List<Process> SJF(List<Process> processes, float executionTime)
+    public static List<Process> FCFS(List<Process> processes)
     {
-        List<Process> aux = new List<Process>();
-
-        for(int i = 0; i < processes.Count; i++)
+        processes.Sort((a, b) =>
         {
-            if(processes[i].GetIncoming() <= executionTime)
-                aux.Add(processes[i]);
-        }
+            return a.GetIncoming().CompareTo(b.GetIncoming());
+        }); //ordenação por tempo de chegada (menor para o maior)
+        return processes;
+    }
 
-        processes.RemoveAt(0);
+    public static List<Process> SJF(List<Process> processes)
+    {
         processes.Sort((a, b) => {
             return a.GetExecution().CompareTo(b.GetExecution());
         });
-        processes.Insert(0, InExecution);
+        InExecution = processes[0];
+        return processes;
+    }
+
+    public static List<Process> RR(List<Process> processes) {
+        processes.Add(processes[0]);
+        processes.RemoveAt(0);
         return processes;
     }
 }

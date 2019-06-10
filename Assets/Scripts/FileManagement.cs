@@ -12,10 +12,7 @@ public class FileManagement : MonoBehaviour {
 
     public FileManagement(string path = "")
     {
-        if (path.Equals(string.Empty))
-            path = defaultPath;
-
-        //print("File Management instantiated!");
+        defaultPath = path;
         if (!Directory.Exists(defaultPath + "logs/"))
             Directory.CreateDirectory(defaultPath + "logs/");
     }
