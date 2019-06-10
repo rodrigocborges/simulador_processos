@@ -154,11 +154,12 @@ public class App : MonoBehaviour
         }
         GUILayout.EndScrollView();
     }
+
+    List<Process> aux = new List<Process>();
     int count = 0;
 
     void EditInExecution()
     {
-        List<Process> aux = new List<Process>();
         for (int i = count; i < listProcess.Count; i++)
         {
             if (listProcess[i].GetIncoming() < executionTime)
@@ -169,10 +170,8 @@ public class App : MonoBehaviour
         }
         if (aux[0].GetExecutedTime() <= 0 && aux.Count > 1)
         {
-            print(1);
             aux.RemoveAt(0);
         }
-        print(aux[0].GetID());
         if (aux.Count >= 1)
             Algorithms.InExecution = aux[0];
         else
@@ -186,7 +185,7 @@ public class App : MonoBehaviour
         {
             if (listProcess[i].GetIncoming() < executionTime && listProcess[i].GetExecutedTime() > 0 && listProcess[i].GetExecutedTime() <= listProcess[i].GetExecution())
             {
-                GUILayout.Box("P" + listProcess[i].GetID(), GUILayout.Width(minimalSize + (listProcess[i].GetExecutedTime() * 10)), GUILayout.Height(32), GUILayout.ExpandHeight(false));
+                GUILayout.Box("P" + listProcess[i].GetID(), GUILayout.Width(minimalSize - (listProcess[i].GetExecutedTime() * 10)), GUILayout.Height(32));
             }
         }
     }
