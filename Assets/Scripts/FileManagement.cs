@@ -6,9 +6,7 @@ using UnityEngine;
 public class FileManagement : MonoBehaviour {
 
     private string defaultPath = Application.dataPath + "/";
-    private string path = "";
-    private string date = System.DateTime.Now.Day + "_" + System.DateTime.Now.Month + "_" + System.DateTime.Now.Year + "__";
-    private string hour = System.DateTime.Now.Hour + "_" + System.DateTime.Now.Minute + "_" + System.DateTime.Now.Second;
+    private string fileToInsert = "";
 
     public FileManagement(string path = "")
     {
@@ -37,14 +35,35 @@ public class FileManagement : MonoBehaviour {
         return r;
     } //retorna linha a linha do arquivo
 
-    public void WriteLog(List<string> info)
+    public void StartLog(string path)
     {
-        StreamWriter writer = new StreamWriter(defaultPath + "logs/" + date + hour + ".log");
-        foreach(string s in info)
+        string local = path + "/logs/" + System.DateTime.Now.Day + "_" + System.DateTime.Now.Month + ".log";
+        if (File.Exists(local))
         {
-            writer.WriteLine(s);
+            fileToInsert = local;
         }
-        writer.Dispose();
+        else
+        {
+            try
+            {
+                StreamWriter writer = new StreamWriter(local);
+                writer.WriteLine("Log iniciado em: " + System.DateTime.Now);
+                writer.Close();
+            }
+            catch (System.IO.IOException ex)
+            {
+                print(ex.Message);
+            }
+        }
+    }
+
+    public void WriteLog(string info)
+    {
+
+        StreamWriter writer = File.AppendText(fileToInsert);
+        writer.Write(System.DateTime.Now + " - ");
+        writer.WriteLine(info);
+        writer.Close();
     } //escreve linha a linha uma informação
 
     public void DeleteAllLogs()
